@@ -214,24 +214,22 @@ Inside **TheLook 전사 공통 용어집** (\`thelook-business-glossary\`), clic
 
 ---
 
-## Task 3. Configure OAuth 2.0 credentials and enable remote MCP servers
+## Task 3. Enable APIs and configure OAuth 2.0 credentials for Remote MCP servers
 
-In this task, you enable the Google-managed Remote MCP servers for BigQuery and Knowledge Catalog and create an OAuth 2.0 Web Client ID so that Gemini Enterprise can query data using end-user credentials.
+In this task, you enable the required Google Cloud APIs (which automatically activate the Google-managed Remote MCP endpoints \`https://bigquery.googleapis.com/mcp\` and \`https://dataplex.googleapis.com/mcp\`) and create an OAuth 2.0 Web Client ID so that Gemini Enterprise can query data using end-user credentials.
 
-### Enable the Google-managed Remote MCP servers
+### Enable the Google Cloud APIs (and Remote MCP endpoints)
 
 1. On the Google Cloud console title bar, click **Activate Cloud Shell** (\`>_\`).
-2. In the Cloud Shell terminal, run the following commands to enable the core APIs and the Google-managed Remote MCP endpoints:
+2. In the Cloud Shell terminal, run the following command to enable BigQuery, Dataplex (Knowledge Catalog), and Discovery Engine (Gemini Enterprise):
 
 \`\`\`bash
-# 1. Enable BigQuery, Dataplex (Knowledge Catalog), and Discovery Engine (Gemini Enterprise) APIs
+# Enable BigQuery, Dataplex (Knowledge Catalog), and Discovery Engine (Gemini Enterprise) APIs
+# Note: Google-managed Remote MCP endpoints (bigquery.googleapis.com/mcp, dataplex.googleapis.com/mcp)
+# are automatically enabled when these APIs are enabled (gcloud beta services mcp enable is no longer needed).
 gcloud services enable bigquery.googleapis.com \\
   dataplex.googleapis.com \\
   discoveryengine.googleapis.com
-
-# 2. Enable Google-managed Remote MCP servers
-gcloud beta services mcp enable bigquery.googleapis.com
-gcloud beta services mcp enable dataplex.googleapis.com
 \`\`\`
 
 > [!WARNING]
