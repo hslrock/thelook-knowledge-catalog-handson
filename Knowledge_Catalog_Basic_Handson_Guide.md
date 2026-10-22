@@ -1,8 +1,8 @@
-# Configuring Knowledge Catalog and Data Cloud MCP Connectors in Gemini Enterprise
+# Configuring Knowledge Catalog and BigQuery in Gemini Enterprise
 
 > [!NOTE]
-> **1차 기본 핸즈온 가이드 (Zero Asset Initialization · 100% Console-First)**  
-> 별도의 GitHub 클론, 초기화 스크립트, Antigravity VM 사전 준비 없이 **Google Cloud Console 화면만으로** 공개 리테일 데이터셋을 즉시 복제하고, **Knowledge Catalog** 비즈니스 용어집 등록부터 **OAuth 2.0 & Remote MCP 커넥터** 연결, **Gemini Enterprise** 자연어 질의(Aha! Moment)까지 30분 만에 완주하는 실습 가이드입니다.
+> **1차 기본 핸즈온 가이드 (Zero Asset Initialization · 100% Console-First · Zero Custom OAuth Setup)**  
+> 별도의 GitHub 클론, 초기화 스크립트, Antigravity VM 사전 준비나 복잡한 OAuth 2.0 Client ID 발급 없이 **Google Cloud Console 화면만으로** 공개 리테일 데이터셋을 즉시 복제하고, **Knowledge Catalog** 비즈니스 용어집 등록부터 **Gemini Enterprise 1P BigQuery Federated 커넥터 & Knowledge Catalog 연동**, 자연어 질의(Aha! Moment)까지 20~30분 만에 완주하는 실습 가이드입니다.
 
 ---
 
@@ -10,7 +10,7 @@
 
 기업의 데이터 웨어하우스에 생성형 AI 에이전트를 연결할 때 가장 흔히 겪는 실패 원인은 **맥락이 없는 물리 스키마(Context-less Raw Schema)**입니다. 데이터베이스 컬럼명(`sale_price`, `status`, `category`)만으로는 사내 고유 지표인 **`NRR`(실현 순매출 — 취소·반품 제외)**이나 전략 큐레이션 상품군인 **`COZY-EDIT`(코지 에디트 — 홈·라운지웨어 3개 카테고리 묶음)**의 정의를 알 수 없어 AI 에이전트가 엉터리 SQL을 작성하는 **지표 환각(Metric Hallucination)**이 발생합니다.
 
-이 핸즈온 실습에서는 **Google Cloud Knowledge Catalog**, **Data Cloud Remote MCP 서버**, 그리고 **Gemini Enterprise**를 사용해 별도의 에이전트 코딩 없이 비즈니스 메타데이터만으로 AI 에이전트의 SQL 정확도를 100%로 끌어올리는 과정을 직접 구현합니다.
+이 핸즈온 실습에서는 **Google Cloud Knowledge Catalog**와 **Gemini Enterprise**의 내장 **BigQuery Federated Query(MCP 기반) 커넥터** 및 **Knowledge Catalog 통합 토글**을 사용해, 별도의 에이전트 코딩이나 OAuth 클라이언트 설정 없이 비즈니스 메타데이터만으로 AI 에이전트의 SQL 정확도를 100%로 끌어올리는 과정을 직접 구현합니다.
 
 ---
 
@@ -19,10 +19,9 @@
 In this lab, you learn how to perform the following tasks:
 
 * Copy the canonical retail dataset into your project in **BigQuery Studio** using a single SQL query.
-* Create a **Business Glossary** in **Knowledge Catalog**, register business terms (`NRR`, `COZY-EDIT`, `OTIF-72`), and link them to physical BigQuery columns.
-* Enable Google-managed **Remote MCP servers** (`bigquery.googleapis.com/mcp`, `dataplex.googleapis.com/mcp`) and create **OAuth 2.0 Web Client** credentials.
-* Register **MCP connectors** in **Gemini Enterprise**, enable custom actions, and turn on the **Knowledge Catalog** assistant integration.
-* Verify the **Before vs. After (Aha! Moment)** in the **Gemini Enterprise** web app using end-user OAuth 2.0 passthrough.
+* Create a **Business Glossary** in **Knowledge Catalog**, structure business terms (`NRR`, `COZY-EDIT`, `OTIF-72`) across the 5 native term sections (`Description`, `Overview`, `Aspects`, `Data quality rules`, `Related entries`), and link them to physical BigQuery columns.
+* Connect **BigQuery** (`Federated query`) in **Gemini Enterprise**, enable analytical tool actions, and turn on the **Enable Knowledge Catalog** assistant toggle (using Google's built-in 1P OAuth with zero manual OAuth Client ID setup).
+* Verify the **Before vs. After (Aha! Moment)** in the **Gemini Enterprise** web app.
 
 ---
 
@@ -189,93 +188,46 @@ Inside **TheLook 전사 공통 용어집** (`thelook-business-glossary`), click 
 
 ---
 
-## Task 3. Enable APIs and configure OAuth 2.0 credentials for Remote MCP servers
+## Task 3. Connect the BigQuery Federated Query connector and enable Knowledge Catalog in Gemini Enterprise
 
-In this task, you enable the required Google Cloud APIs (which automatically activate the Google-managed Remote MCP endpoints `https://bigquery.googleapis.com/mcp` and `https://dataplex.googleapis.com/mcp`) and create an OAuth 2.0 Web Client ID so that Gemini Enterprise can query data using end-user credentials.
+In this task, you connect **BigQuery** to **Gemini Enterprise** using the first-party **BigQuery Federated Query** connector (`bigquery_mcp`), enable its analytical actions, create your assistant app, and turn on the **Enable Knowledge Catalog** toggle.
 
-### Enable the Google Cloud APIs (and Remote MCP endpoints)
+> [!TIP]
+> **Why no OAuth 2.0 Client ID setup is needed:**
+> Gemini Enterprise's first-party **BigQuery (`Federated query`)** connector and built-in **Knowledge Catalog** integration use **Google 1P Offline OAuth (`AGENT_AUTH_PROVIDER_TYPE_GOOGLE_FIRST_PARTY`)** and automatic End-User Credential (EUC) forwarding under the hood. You do **not** need to create an OAuth 2.0 Client ID/Secret in `APIs & Services > Credentials` or override any Argolis organization policy (`disableCustomMcpServerConnector`).
 
-1. On the Google Cloud console title bar, click **Activate Cloud Shell** (`>_`).
-2. In the Cloud Shell terminal, run the following command to enable BigQuery, Dataplex (Knowledge Catalog), and Discovery Engine (Gemini Enterprise):
+### Step 3-1. Create the BigQuery Federated Query data store and enable actions
 
-```bash
-# Enable BigQuery, Dataplex (Knowledge Catalog), and Discovery Engine (Gemini Enterprise) APIs
-# Note: Google-managed Remote MCP endpoints (bigquery.googleapis.com/mcp, dataplex.googleapis.com/mcp)
-# are automatically enabled when these APIs are enabled (gcloud beta services mcp enable is no longer needed).
-gcloud services enable bigquery.googleapis.com \
-  dataplex.googleapis.com \
-  discoveryengine.googleapis.com
-```
+1. In the Google Cloud console, go to **Gemini Enterprise** > **Data stores**, and click **+ Create data store**.
+2. Under **First-party data sources (Google Cloud)**, select **BigQuery**.
+3. Select **Federated query (recommended)** as the connection mode.
+4. Configure the connector settings:
+   - **Data connector name**: `thelook-bigquery-federated`
+   - **Billing Project ID**: Enter your current Google Cloud Project ID *(e.g., `kc-handson-lab-01`)* so BigQuery query jobs are billed to your project.
+5. Click **Create**.
+6. Once the data store is created, click its name (`thelook-bigquery-federated`), open the **Actions** tab, and verify or enable the analytical actions:
+   - **`Execute SQL (Read-Only)`** (`execute_sql_readonly`)
+   - **`Get Table Info`** (`get_table_info`)
+   - **`Get Dataset Info`** (`get_dataset_info`)
+   - **`List Dataset IDs`** (`list_dataset_ids`)
+   - **`List Table IDs`** (`list_table_ids`)
+   - **`Get Query Results`** (`get_query_results`) and **`Get Job`** (`get_job`)
 
-> [!WARNING]
-> **Argolis Environment Note (Organization Policy):** If you are running this hands-on lab in an **Argolis** project, the organization policy `constraints/discoveryengine.managed.disableCustomMcpServerConnector` (*Disable custom MCP server connector for Gemini Enterprise*) is enforced by default.
-> 1. In the Google Cloud console, go to **IAM & Admin** > **Organization Policies**.
-> 2. Search for **`constraints/discoveryengine.managed.disableCustomMcpServerConnector`** and click **Manage policy**.
-> 3. Select **Override parent's policy**, click **+ Add a rule**, set **Enforcement** to **Off**, click **Done**, and then click **Set policy**.
+### Step 3-2. Create the Gemini Enterprise app and turn on Enable Knowledge Catalog
 
-### Create an OAuth 2.0 Client ID for Gemini Enterprise
-
-1. In the Google Cloud console, in the **Navigation menu** (☰), click **APIs & Services** > **Credentials**.
-   *(If prompted to configure the OAuth consent screen first, click **Configure consent screen**, select **Internal**, enter **Gemini Enterprise MCP** as the App name, select your support email, and click **Save and continue**.)*
-2. At the top of the **Credentials** page, click **+ Create credentials** > **OAuth client ID**.
-3. On the **Create OAuth client ID** page, specify the following:
-
-| Property | Value (type or select) |
-| :--- | :--- |
-| **Application type** | **Web application** |
-| **Name** | **gemini-enterprise-mcp-oauth** |
-| **Authorized redirect URIs (URI 1)** | **https://vertexaisearch.cloud.google.com/oauth-redirect** |
-| **Authorized redirect URIs (URI 2)** | **https://vertexaisearch.cloud.google.com/static/oauth/oauth.html** |
-
-4. Click **Create**.
-5. In the **OAuth client created** dialog, copy **Your Client ID** and **Your Client Secret** to a notepad for use in Task 4.
-
-![OAuth 2.0 Client ID and Cloud Shell MCP setup screen](images/step3_oauth_mcp_setup.png)
-
----
-
-## Task 4. Register MCP connectors and create the Gemini Enterprise app
-
-In this task, you connect **Knowledge Catalog** and **BigQuery** to **Gemini Enterprise** using the MCP endpoints and OAuth 2.0 credentials, enable the MCP tool actions, and publish a Gemini Enterprise assistant app.
-
-> [!IMPORTANT]
-> **Two Supported Connection Paths in Gemini Enterprise:**
-> - **Path A (Custom Remote MCP Connectors — Explicit Tool Control):** Register `https://dataplex.googleapis.com/mcp` and `https://bigquery.googleapis.com/mcp` directly with your OAuth 2.0 Client ID and Secret so you can inspect and toggle individual MCP tools (`search_entries`, `lookup_context`, `execute_sql`).
-> - **Path B (First-Party BigQuery Federated Query Connector):** Select **First-party data sources** > **BigQuery** > **Federated query (recommended)**, which uses `bigquery_mcp` under the hood and automatically turns on **Enable Knowledge Catalog** on the app's **Assistant** tab.
-
-### Register the Knowledge Catalog & BigQuery MCP connectors
-
-1. In the Google Cloud console, go to **Gemini Enterprise** > **Data stores**, and then click **Create data store**.
-2. Select **Custom MCP server** (or **BigQuery** > **Federated query**), and specify the following to register the **Knowledge Catalog MCP** connector:
-
-| Property | Value (type or select) |
-| :--- | :--- |
-| **Data connector name** | **knowledge-catalog-mcp-connector** |
-| **MCP Server URI (StreamableHTTP)** | **https://dataplex.googleapis.com/mcp** |
-| **Client ID** | *`[Your OAuth 2.0 Client ID from Task 3]`* |
-| **Client Secret** | *`[Your OAuth 2.0 Client Secret from Task 3]`* |
-| **Authorization URI** | `https://accounts.google.com/o/oauth2/v2/auth?client_id=YOUR_CLIENT_ID&redirect_uri=https%3A%2F%2Fvertexaisearch.cloud.google.com%2Fstatic%2Foauth%2Foauth.html&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&include_granted_scopes=true&response_type=code&access_type=offline&prompt=consent` |
-| **Token URI** | **https://oauth2.googleapis.com/token** |
-
-3. Repeat the steps to create the **BigQuery MCP** connector (`bigquery-mcp-connector`) using the endpoint **`https://bigquery.googleapis.com/mcp`** (and scope `https://www.googleapis.com/auth/bigquery` or `cloud-platform`).
-4. Open each created data store, select the **Actions** tab, click **Reload custom actions**, select all discovered MCP tools (`search_entries`, `lookup_context`, `lookup_entry`, `execute_sql`, `get_table_info`), and click **Enable actions**.
-
-![Gemini Enterprise MCP Connector and Actions configuration screen](images/step4a_ge_mcp_connector.png)
-
-### Create the Gemini Enterprise app and enable Knowledge Catalog
-
-1. In the **Gemini Enterprise** navigation menu, click **Apps**, and then click **Create app**.
-2. For **App name**, type **thelook-kc-assistant**, select the **global (Global)** multi-region, attach your data stores/connectors, and click **Create**.
-3. Inside the **thelook-kc-assistant** app, click **Configurations** in the left navigation pane, and then select the **Assistant** tab.
-4. In the **Enable Knowledge Catalog** section, verify that the toggle is turned **On**, and then click **Save and publish**.
+1. In the **Gemini Enterprise** navigation menu, click **Apps**, and then click **+ Create app**.
+2. For **App name**, enter **`thelook-kc-assistant`**, select the **`global (Global)`** multi-region, attach your **`thelook-bigquery-federated`** data store, and click **Create**.
+3. Inside the **`thelook-kc-assistant`** app, click **Configurations** in the left navigation pane, and select the **Assistant** tab.
+4. Scroll to the **Enable Knowledge Catalog** section, turn the toggle **On**, and click **Save** (or **Save and publish**).
+   *(Turning on this toggle equips the assistant with built-in 1P Knowledge Catalog tools—`knowledge_catalog_search`, `knowledge_catalog_lookup_context`, and `knowledge_catalog_lookup_entry`—that automatically retrieve your Business Glossary terms, column links, and custom Aspects at query time.)*
 
 ![Gemini Enterprise App Assistant Knowledge Catalog toggle screen](images/step4b_ge_app_assistant_kc.png)
 
 ---
 
-## Task 5. Test Before vs. After in the Gemini Enterprise web app
+## Task 4. Test Before vs. After in the Gemini Enterprise web app
 
-In this final task, you launch the **Gemini Enterprise** web app, authorize your OAuth 2.0 session, and compare the response quality with and without **Knowledge Catalog** grounding.
+In this final task, you launch the **Gemini Enterprise** web app and compare the response quality with and without **Knowledge Catalog** grounding.
 
 ### Compare Before (Without Knowledge Catalog) vs. After (With Knowledge Catalog)
 
@@ -284,12 +236,12 @@ In this final task, you launch the **Gemini Enterprise** web app, authorize your
 
    **우리 회사의 '코지 에디트(COZY-EDIT)' 상품군의 실현 순매출(NRR)과 확정 주문 건수는 얼마야? 카테고리별 내역도 함께 보여줘**
 
-3. When prompted by the connector authorization banner, click **Authorize** and approve the Google OAuth 2.0 consent popup using your logged-in account.
+3. When prompted by the BigQuery connector authorization banner on your first query, click **Authorize** and approve the built-in Google 1P consent prompt using your logged-in account.
 4. Observe the **Aha! Moment** in the agent's reasoning trace and final answer:
    - **Without Knowledge Catalog (Before):** The agent inspects raw BigQuery table schemas (`products`, `order_items`), fails to find any column or category value literally named `'COZY-EDIT'` or `'NRR'`, and either returns `0 rows` or erroneously sums `sale_price` across cancelled and returned orders.
-   - **With Knowledge Catalog + MCP (After):**
-     1. The agent calls Knowledge Catalog (`search_entries` and `lookup_context`) to retrieve the exact business definitions and linked columns for **`COZY-EDIT`** (`products.category IN ('Sleep & Lounge', 'Intimates', 'Fashion Hoodies & Sweatshirts')`) and **`NRR`** (`SUM(sale_price)` where `order_items.status NOT IN ('Cancelled', 'Returned')`).
-     2. The agent passes this grounded context to the BigQuery MCP connector (`execute_sql`) and runs a verified read-only SQL query to return the exact category breakdown and total NRR (**`$1,177,507.40 [약 16억 2,496만 원]`** across **26,381** realized orders).
+   - **With Knowledge Catalog + BigQuery Federated MCP (After):**
+     1. The agent calls Knowledge Catalog (`knowledge_catalog_search`, `knowledge_catalog_lookup_context`, `knowledge_catalog_lookup_entry`) to retrieve the exact business definitions, custom `semantic-sql-rule` Aspects, and linked columns for **`COZY-EDIT`** (`products.category IN ('Sleep & Lounge', 'Intimates', 'Fashion Hoodies & Sweatshirts')`) and **`NRR`** (`SUM(sale_price)` where `order_items.status NOT IN ('Cancelled', 'Returned')`).
+     2. The agent passes this grounded context to the BigQuery connector (`execute_sql_readonly`) and runs a verified read-only SQL query to return the exact category breakdown and total NRR (**`$1,177,507.40 [약 16억 2,496만 원]`** across **26,381** realized orders).
 
 ![Gemini Enterprise Web App Before vs After Aha Moment comparison](images/step5_ge_chat_aha_moment.png)
 
