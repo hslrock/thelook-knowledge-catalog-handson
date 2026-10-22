@@ -81,26 +81,37 @@ Knowledge Catalog 용어 상세 화면은 다섯 영역과 우측 동의어 패�
    - `target_tables`
    - `filter_or_join_rule`
 
-### 2-2. 비즈니스 용어집 만들기
+### 2-2. 비즈니스 용어집 및 카테고리 계층 만들기
 
-1. **Dataplex** > **비즈니스 용어집(`Business glossaries`)**에서 **비즈니스 용어집 만들기(`Create business glossary`)**를 누릅니다.
-2. 아래 값으로 생성합니다.
+Knowledge Catalog 비즈니스 용어집은 **용어집(`Glossary`) ➔ 카테고리(`Category`) ➔ 용어(`Term`)** 계층으로 구성됩니다.
+
+| 계층 단위 | 역할 및 특징 | 실습 구성 |
+| :--- | :--- | :--- |
+| **용어집** | 최상위 컨테이너. IAM 권한(`roles/dataplex.catalogViewer` 등)을 부여하는 거버넌스 경계 단위 | `TheLook 전사 공통 용어집` (`thelook-business-glossary`) |
+| **카테고리** | 부서·도메인별 분류 폴더. 카테고리 안에 하위 카테고리를 넣어 다단계 트리로 중첩 가능 | 📁 `매출·재무 지표` (`sales-metrics`)<br>📁 `MD 상품 큐레이션` (`md-curation`) |
+| **용어** | 비즈니스 정의, 관점(SQL 수식), 동의어, 물리 컬럼 연결을 담는 최소 단위 | 📄 `NRR` (`매출·재무 지표` 하위)<br>📄 `COZY-EDIT` (`MD 상품 큐레이션` 하위) |
+
+1. **Dataplex** > **비즈니스 용어집(`Business glossaries`)**에서 **비즈니스 용어집 만들기(`Create business glossary`)**를 누르고 아래 값으로 생성합니다.
    - **표시 이름**: `TheLook 전사 공통 용어집`
    - **용어집 ID**: `thelook-business-glossary`
    - **위치**: `asia-northeast3 (Seoul)`
+2. 생성한 용어집에 들어가 상단 **카테고리 만들기(`Create Category`)**를 눌러 카테고리 2개를 만듭니다. (카테고리 상세 화면 안에서 다시 **카테고리 만들기**를 누르면 하위 카테고리를 중첩할 수 있습니다.)
+   - **카테고리 1**: 표시 이름 `매출·재무 지표` / 카테고리 ID `sales-metrics`
+   - **카테고리 2**: 표시 이름 `MD 상품 큐레이션` / 카테고리 ID `md-curation`
 
-![Knowledge Catalog 비즈니스 용어집 생성 화면](images/step2a_kc_glossary_create.png)
+![Knowledge Catalog 비즈니스 용어집 및 카테고리 계층 화면](images/step2a_kc_glossary_create.png)
 
-### 2-3. 용어 2개(`NRR`, `COZY-EDIT`) 등록
+### 2-3. 카테고리별 용어 2개(`NRR`, `COZY-EDIT`) 등록
 
-생성한 용어집 안에서 **+ 용어 추가(`+ Add term`)**를 눌러 두 용어를 등록합니다.
+각 카테고리를 선택한 뒤 **용어 추가(`Add Term`)** 또는 **용어 만들기(`Create Term`)**를 눌러 두 용어를 등록합니다.
 
 > [!TIP]
 > **`⑤ 관련 항목`에서 특정 컬럼을 연결하는 방법**  
 > * **방법 1 (테이블 `스키마` 탭 활용)**: **Dataplex > 검색(`Search`)**에서 테이블(`order_items` 또는 `products`)을 열고 **`스키마(`Schema`)`** 탭에서 컬럼 체크박스를 선택한 뒤 **`비즈니스 용어 추가(`Add business term`)`**를 누릅니다.  
 > * **방법 2 (`⑤ 관련 항목 > + 추가` 필터 활용)**: `+ 추가` 창 상단 **필터(`Filter`)**에서 **`열 이름(`Column Name`)`**을 선택해 컬럼명(예: `Column Name : sale_price`)을 입력하면 숨겨져 있던 `Column Name` 열이 나타납니다. 표시된 컬럼 행을 체크하고 **추가**를 누릅니다.
 
-#### 용어 1. `NRR`
+#### 용어 1. `NRR` (`매출·재무 지표` 카테고리 하위)
+- **상위 계층**: `매출·재무 지표 (sales-metrics)`
 - **표시 이름**: `NRR` / **용어 ID**: `nrr`
 
 | 영역 | 입력값 |
@@ -111,7 +122,8 @@ Knowledge Catalog 용어 상세 화면은 다섯 영역과 우측 동의어 패�
 | ⑤ 관련 항목 | `order_items` 테이블의 `sale_price`, `status` 컬럼 |
 | 동의어 | `순매출`, `실현 순매출`, `실현매출`, `Net Realized Revenue` |
 
-#### 용어 2. `COZY-EDIT`
+#### 용어 2. `COZY-EDIT` (`MD 상품 큐레이션` 카테고리 하위)
+- **상위 계층**: `MD 상품 큐레이션 (md-curation)`
 - **표시 이름**: `COZY-EDIT` / **용어 ID**: `cozy-edit`
 
 | 영역 | 입력값 |
