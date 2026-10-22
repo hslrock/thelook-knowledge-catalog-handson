@@ -61,7 +61,7 @@ SELECT * FROM `bigquery-public-data.thelook_ecommerce.distribution_centers`;
 4. Click **Run**.
    The query completes in approximately 5 seconds and creates the `thelook_ecommerce` dataset and 5 tables (`orders`, `order_items`, `products`, `users`, `distribution_centers`) in the `US` multi-region.
 
-![BigQuery Studio dataset replication screen](./images/step1_bigquery_copy.png)
+![BigQuery Studio dataset replication screen](images/step1_bigquery_copy.png)
 
 > [!TIP]
 > **Auto-Ingestion into Knowledge Catalog:** As soon as the BigQuery tables are created, **Knowledge Catalog** automatically harvests and indexes their technical metadata under the `@bigquery` entry group with zero wait time (`$0 [약 0원]` for automatically ingested technical metadata).
@@ -76,7 +76,7 @@ In this task, you create a Business Glossary in **Knowledge Catalog** and popula
 
 When you open a term inside **Dataplex > Business glossaries**, the term detail page is divided into 5 functional sections (plus **Synonyms & Related terms** on the right-hand panel):
 
-![Real Knowledge Catalog Glossary Term 5 Sections](./images/step2_real_kc_term_sections.png)
+![Real Knowledge Catalog Glossary Term 5 Sections](images/step2_real_kc_term_sections.png)
 
 | UI Section | Architectural Role | Internal Storage & How AI Agents / Dataplex Consume It at Runtime | What to Put Here |
 | :--- | :--- | :--- | :--- |
@@ -123,13 +123,24 @@ To attach structured SQL rules in the **③ Aspects** section of each term, firs
 | **Location** | **us (multi-region)** |
 | **Description** | **모든 팀이 동일한 정의로 사용하는 전사 공통 큐레이션 용어(COZY-EDIT), 핵심 매출 지표(NRR), 물류 배송 SLA(OTIF-72) 표준 용어집입니다.** |
 
-![Knowledge Catalog Business Glossary creation screen](./images/step2a_kc_glossary_create.png)
+![Knowledge Catalog Business Glossary creation screen](images/step2a_kc_glossary_create.png)
 
 ---
 
 ### Step 2-3. Add the 3 core terms (`NRR`, `COZY-EDIT`, `OTIF-72`) and populate Sections ① ~ ⑤
 
-Inside **TheLook 전사 공통 용어집** (`thelook-business-glossary`), click **+ Add term** to create each of the 3 terms below, and then fill in its **① Description**, **② Overview**, **③ Aspects**, **④ Data quality rules**, and **⑤ Related entries** right on the Term Details page:
+Inside **TheLook 전사 공통 용어집** (`thelook-business-glossary`), click **+ Add term** to create each of the 3 terms below, and then fill in its **① Description**, **② Overview**, **③ Aspects**, **④ Data quality rules**, and **⑤ Related entries** right on the Term Details page.
+
+> [!TIP]
+> **💡 Why can't I see columns in `⑤ Related entries > + Add` by default? (How to link specific columns in the Console UI)**
+> When you click **`+ Add`** under **`⑤ Related entries`** (*Add Related Entries* drawer), the table hides the **`Column Name`** column by default (`[hidden]="!hasColumnNameFilter"`) and only shows **table-level** rows (`Resource Name`, `Resource Type`). You can link a specific column in **two ways**:
+> 1. **Method A — Inside `⑤ Related entries > + Add` (Use the `Column Name` Filter Chip):**
+>    - Click the **Filter** bar (`Filter to find resources by name, type or column.`) at the top of the *Add Related Entries* drawer.
+>    - From the filter property dropdown, select **`Column Name`** (do **not** just type the table name), and enter the column name—for example: **`Column Name : sale_price`** (plus optionally **`Resource Name : order_items`**).
+>    - As soon as a **`Column Name`** filter chip is active, the hidden **`Column Name`** column appears in the table and lists each matching column (`order_items` $\rightarrow$ `sale_price`) as a selectable row!
+> 2. **Method B — From the Table's `Schema` Tab (Recommended for multi-column selection):**
+>    - Go to **Dataplex > Search** (or click the `order_items` table entry), open the **`order_items`** table page, and select the **`Schema`** tab.
+>    - Check the boxes next to **`sale_price`** and **`status`**, click **`Add business term`** at the top of the schema table, and select **`NRR`**.
 
 #### 📌 Term 1: `NRR` (실현 순매출)
 - **Display name**: `NRR (Net Realized Revenue / 실현 순매출)`
@@ -141,7 +152,7 @@ Inside **TheLook 전사 공통 용어집** (`thelook-business-glossary`), click 
 | **② Overview** | Click `+ Add` | **• 산출 목적**: 총거래액(GMV) 착시를 방지하고 취소·반품을 차감한 실질 귀속 매출 측정<br>**• 포함/제외 기준**: `Complete`, `Shipped`, `Processing` 상태는 포함하며, `Cancelled`(주문 취소) 및 `Returned`(반품 완료) 상태는 100% 제외<br>**• 산출 기준 컬럼**: 할인 적용 후 실제 판매 단가(`order_items.sale_price`) 합계 기준 |
 | **③ Aspects** | Click `+ Add` > Select **`Semantic Metric & SQL Calculation Rule`** (`semantic-sql-rule`) | • **rule_type**: `AGGREGATION_METRIC (전사 표준 매출 지표)`<br>• **sql_expression**: `SUM(CASE WHEN order_items.status NOT IN ('Cancelled', 'Returned') THEN order_items.sale_price ELSE 0 END)`<br>• **target_tables**: `thelook_ecommerce.order_items`<br>• **join_or_filter_condition**: `order_items.status NOT IN ('Cancelled', 'Returned')`<br>• **unit_or_return_type**: `FLOAT64 (USD $)` |
 | **④ Data quality rules** | Click `+ Add` *(Optional)* | • **Display name**: `non_negative_sale_price` (`Range check` / Dimension: `VALIDITY` / Parameter: `min_value = 0`)<br>• **Display name**: `valid_order_item_status` (`Set check` / Dimension: `VALIDITY` / Allowed values: `Complete, Shipped, Processing, Cancelled, Returned`) |
-| **⑤ Related entries** | Click `+ Add` | Search **`thelook_ecommerce.order_items`** $\rightarrow$ Select columns **`sale_price`** and **`status`** $\rightarrow$ Click **Save** |
+| **⑤ Related entries** | Click `+ Add` | In the **Filter** bar, select **`Column Name`** $\rightarrow$ enter **`sale_price`** (and **`status`**) with **`Resource Name : order_items`** $\rightarrow$ check the column rows and click **Add** *(or select columns in `order_items` > **Schema** tab > **Add business term**)* |
 | **우측 패널: Synonyms** | Click `+ Add` | `순매출`, `실현 순매출`, `실현매출`, `Net Realized Revenue` |
 
 ---
@@ -156,7 +167,7 @@ Inside **TheLook 전사 공통 용어집** (`thelook-business-glossary`), click 
 | **② Overview** | Click `+ Add` | **• 큐레이션 배경**: 시즌 캠페인 및 홈·원마일웨어 기획전 분석 시 개별 카테고리를 묶어 단일 전략 상품군으로 집계하기 위한 사내 표준 분류<br>**• 포함 물리 카테고리(3종)**: `Sleep & Lounge`, `Intimates`, `Fashion Hoodies & Sweatshirts`<br>**• 주의사항**: `Active`(애슬레저/스포츠웨어)나 `Socks & Hosiery`는 코지 에디트 집계에서 제외함 |
 | **③ Aspects** | Click `+ Add` > Select **`Semantic Metric & SQL Calculation Rule`** (`semantic-sql-rule`) | • **rule_type**: `DIMENSION_FILTER (카테고리 큐레이션 필터)`<br>• **sql_expression**: `products.category IN ('Sleep & Lounge', 'Intimates', 'Fashion Hoodies & Sweatshirts')`<br>• **target_tables**: `thelook_ecommerce.products`<br>• **join_or_filter_condition**: `order_items.product_id = products.id`<br>• **unit_or_return_type**: `STRING (Product Category Filter)` |
 | **④ Data quality rules** | Click `+ Add` *(Optional)* | • **Display name**: `category_not_null` (`Null check` / Dimension: `COMPLETENESS` on `products.category`) |
-| **⑤ Related entries** | Click `+ Add` | Search **`thelook_ecommerce.products`** $\rightarrow$ Select column **`category`** $\rightarrow$ Click **Save** |
+| **⑤ Related entries** | Click `+ Add` | In the **Filter** bar, select **`Column Name : category`** and **`Resource Name : products`** $\rightarrow$ check the column row and click **Add** *(or attach from `products` > **Schema** tab > **Add business term**)* |
 | **우측 패널: Synonyms** | Click `+ Add` | `코지에디트`, `홈웨어 큐레이션`, `라운지웨어 기획전` |
 
 ---
@@ -171,10 +182,10 @@ Inside **TheLook 전사 공통 용어집** (`thelook-business-glossary`), click 
 | **② Overview** | Click `+ Add` | **• SLA 측정 기준**: `orders.created_at`(주문 생성 시각)부터 `orders.delivered_at`(배송 완료 시각)까지의 경과 시간(시간 단위)을 측정<br>**• 위반(Breach) 판정**: 배송 완료(`status = 'Complete'`) 건 중 경과 시간이 **72시간을 초과(`> 72`)**한 주문을 SLA 위반으로 분류<br>**• 보상 연계**: 최우수 고객(`HV-VIP`)의 주문이 `OTIF-72`를 위반한 경우 CS 전결 보상 코드(`VIP-OVERRIDE-99`) 발급 대상이 됨 |
 | **③ Aspects** | Click `+ Add` > Select **`Semantic Metric & SQL Calculation Rule`** (`semantic-sql-rule`) | • **rule_type**: `SLA_CONDITION (배송 지연 SLA 판정식)`<br>• **sql_expression**: `TIMESTAMP_DIFF(orders.delivered_at, orders.created_at, HOUR) > 72`<br>• **target_tables**: `thelook_ecommerce.orders`<br>• **join_or_filter_condition**: `orders.status = 'Complete' AND orders.delivered_at IS NOT NULL`<br>• **unit_or_return_type**: `INT64 (Elapsed Hours > 72h = SLA Breach)` |
 | **④ Data quality rules** | Click `+ Add` *(Optional)* | • **Display name**: `delivered_after_created` (`Custom SQL check`: `delivered_at >= created_at` / Dimension: `CONSISTENCY`) |
-| **⑤ Related entries** | Click `+ Add` | Search **`thelook_ecommerce.orders`** $\rightarrow$ Select columns **`created_at`** and **`delivered_at`** $\rightarrow$ Click **Save** |
+| **⑤ Related entries** | Click `+ Add` | In the **Filter** bar, select **`Column Name : created_at`** (and **`delivered_at`**) with **`Resource Name : orders`** $\rightarrow$ check the column rows and click **Add** *(or attach from `orders` > **Schema** tab > **Add business term**)* |
 | **우측 패널: Synonyms** | Click `+ Add` | `72시간 배송 SLA`, `정시 배송 기준`, `배송 지연 SLA` |
 
-![Knowledge Catalog Column Definition Link screen](./images/step2b_kc_column_link.png)
+![Knowledge Catalog Column Definition Link screen](images/step2b_kc_column_link.png)
 
 ---
 
@@ -221,7 +232,7 @@ gcloud beta services mcp enable dataplex.googleapis.com
 4. Click **Create**.
 5. In the **OAuth client created** dialog, copy **Your Client ID** and **Your Client Secret** to a notepad for use in Task 4.
 
-![OAuth 2.0 Client ID and Cloud Shell MCP setup screen](./images/step3_oauth_mcp_setup.png)
+![OAuth 2.0 Client ID and Cloud Shell MCP setup screen](images/step3_oauth_mcp_setup.png)
 
 ---
 
@@ -251,7 +262,7 @@ In this task, you connect **Knowledge Catalog** and **BigQuery** to **Gemini Ent
 3. Repeat the steps to create the **BigQuery MCP** connector (`bigquery-mcp-connector`) using the endpoint **`https://bigquery.googleapis.com/mcp`** (and scope `https://www.googleapis.com/auth/bigquery` or `cloud-platform`).
 4. Open each created data store, select the **Actions** tab, click **Reload custom actions**, select all discovered MCP tools (`search_entries`, `lookup_context`, `lookup_entry`, `execute_sql`, `get_table_info`), and click **Enable actions**.
 
-![Gemini Enterprise MCP Connector and Actions configuration screen](./images/step4a_ge_mcp_connector.png)
+![Gemini Enterprise MCP Connector and Actions configuration screen](images/step4a_ge_mcp_connector.png)
 
 ### Create the Gemini Enterprise app and enable Knowledge Catalog
 
@@ -260,7 +271,7 @@ In this task, you connect **Knowledge Catalog** and **BigQuery** to **Gemini Ent
 3. Inside the **thelook-kc-assistant** app, click **Configurations** in the left navigation pane, and then select the **Assistant** tab.
 4. In the **Enable Knowledge Catalog** section, verify that the toggle is turned **On**, and then click **Save and publish**.
 
-![Gemini Enterprise App Assistant Knowledge Catalog toggle screen](./images/step4b_ge_app_assistant_kc.png)
+![Gemini Enterprise App Assistant Knowledge Catalog toggle screen](images/step4b_ge_app_assistant_kc.png)
 
 ---
 
@@ -282,7 +293,7 @@ In this final task, you launch the **Gemini Enterprise** web app, authorize your
      1. The agent calls Knowledge Catalog (`search_entries` and `lookup_context`) to retrieve the exact business definitions and linked columns for **`COZY-EDIT`** (`products.category IN ('Sleep & Lounge', 'Intimates', 'Fashion Hoodies & Sweatshirts')`) and **`NRR`** (`SUM(sale_price)` where `order_items.status NOT IN ('Cancelled', 'Returned')`).
      2. The agent passes this grounded context to the BigQuery MCP connector (`execute_sql`) and runs a verified read-only SQL query to return the exact category breakdown and total NRR (**`$1,177,507.40 [약 16억 2,496만 원]`** across **26,381** realized orders).
 
-![Gemini Enterprise Web App Before vs After Aha Moment comparison](./images/step5_ge_chat_aha_moment.png)
+![Gemini Enterprise Web App Before vs After Aha Moment comparison](images/step5_ge_chat_aha_moment.png)
 
 ### Try an additional SLA breach prompt (`OTIF-72`)
 
