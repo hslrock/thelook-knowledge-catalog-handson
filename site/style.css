@@ -78,7 +78,7 @@ body {
 .eyebrow { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 6px; letter-spacing: .3px; }
 
 .page code {
-  font-family: 'JetBrains Mono', 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Pretendard Variable', Pretendard, monospace; font-size: .86em;
+  font-family: 'JetBrains Mono', 'Pretendard Variable', Pretendard, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .86em;
   background: var(--code-bg); padding: 2px 6px; border-radius: 5px; word-break: break-word;
 }
 .page :not(pre) > code.copyable { cursor: copy; transition: background .15s; }
