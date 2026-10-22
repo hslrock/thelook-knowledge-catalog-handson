@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge Catalog × Gemini Enterprise 핸즈온</title>
+<meta name="description" content="BigQuery, Knowledge Catalog, Gemini Enterprise를 연결해 비즈니스 용어가 SQL 생성 결과를 어떻게 바꾸는지 직접 비교하는 실습 가이드">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5/index.css">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+</head>
+<body>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="목차 열기">☰</button>
+  <div class="brand">
+    <span class="brand-icon">🧭</span>
+    <span class="brand-title">Knowledge Catalog × Gemini Enterprise 핸즈온</span>
+  </div>
+  <div class="progress-wrap" title="완료한 단계">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-text" id="progressText">0 / 0</span>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="실습 목차">
+    <ol class="toc" id="toc"></ol>
+    <button class="reset-btn" id="resetBtn">진행 상황 초기화</button>
+  </nav>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main" id="main">
+    <article class="page" id="page"></article>
+    <footer class="pager" id="pager">
+      <button class="pager-btn" id="prevBtn">← 이전</button>
+      <button class="done-btn" id="doneBtn">✓ 이 단계 완료</button>
+      <button class="pager-btn primary" id="nextBtn">다음 →</button>
+    </footer>
+  </main>
+</div>
+
+<div class="lightbox" id="lightbox"><img id="lightboxImg" alt=""></div>
+<div class="toast" id="toast">복사했습니다</div>
+
+<script src="marked.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

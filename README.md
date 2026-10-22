@@ -4,6 +4,18 @@ BigQuery 테이블에 비즈니스 맥락이 없으면 AI 에이전트는 물리
 
 ---
 
+## 0. 시작 전 준비
+
+- 결제가 연결된 Google Cloud 프로젝트와 프로젝트 소유자(`Owner`) 권한
+- Gemini Enterprise 라이선스가 할당된 계정
+- 아래 명령을 Cloud Shell에서 실행해 필요한 API를 활성화합니다.
+
+```bash
+gcloud services enable bigquery.googleapis.com dataplex.googleapis.com discoveryengine.googleapis.com
+```
+
+---
+
 ## 1. BigQuery 테이블 생성 (`asia-northeast3`)
 
 1. Google Cloud 콘솔 메뉴(☰)에서 **BigQuery** > **Studio**를 엽니다.
@@ -107,8 +119,8 @@ Knowledge Catalog 비즈니스 용어집은 **용어집(`Glossary`) ➔ 카테�
 
 > [!TIP]
 > **`⑤ 관련 항목`에서 특정 컬럼을 연결하는 방법**  
-> * **방법 1 (테이블 `스키마` 탭 활용)**: **Dataplex > 검색(`Search`)**에서 테이블(`order_items` 또는 `products`)을 열고 **`스키마(`Schema`)`** 탭에서 컬럼 체크박스를 선택한 뒤 **`비즈니스 용어 추가(`Add business term`)`**를 누릅니다.  
-> * **방법 2 (`⑤ 관련 항목 > + 추가` 필터 활용)**: `+ 추가` 창 상단 **필터(`Filter`)**에서 **`열 이름(`Column Name`)`**을 선택해 컬럼명(예: `Column Name : sale_price`)을 입력하면 숨겨져 있던 `Column Name` 열이 나타납니다. 표시된 컬럼 행을 체크하고 **추가**를 누릅니다.
+> * **방법 1 (테이블 `스키마` 탭 활용)**: **Dataplex > 검색(`Search`)**에서 테이블(`order_items` 또는 `products`)을 열고 **스키마(`Schema`)** 탭에서 컬럼 체크박스를 선택한 뒤 **비즈니스 용어 추가(`Add business term`)**를 누릅니다.  
+> * **방법 2 (`⑤ 관련 항목 > + 추가` 필터 활용)**: `+ 추가` 창 상단 **필터(`Filter`)**에서 **열 이름(`Column Name`)**을 선택해 컬럼명(예: `Column Name : sale_price`)을 입력하면 숨겨져 있던 `Column Name` 열이 나타납니다. 표시된 컬럼 행을 체크하고 **추가**를 누릅니다.
 
 #### 용어 1. `NRR` (`매출·재무 지표` 카테고리 하위)
 - **상위 계층**: `매출·재무 지표 (sales-metrics)`
@@ -202,3 +214,17 @@ Knowledge Catalog 비즈니스 용어집은 **용어집(`Glossary`) ➔ 카테�
 | 결과 | **`0건`** 또는 취소·반품 포함 오답(**`$1,350.00`**) | `Fashion Hoodies & Sweatshirts` `$450.00` (2건)<br>`Sleep & Lounge` `$300.00` (2건)<br>`Intimates` `$250.00` (2건)<br>**합계 `$1,000.00 [약 138만 원]` (확정 주문 6건)** |
 
 ![Gemini Enterprise 웹앱 두 앱 비교 결과](images/step5_ge_chat_aha_moment.png)
+
+---
+
+## 5. 리소스 정리
+
+실습이 끝나면 아래 순서로 삭제합니다. 용어집은 하위 용어와 카테고리를 먼저 지워야 삭제됩니다.
+
+1. **Gemini Enterprise**: 앱 `thelook-without-kc`, `thelook-with-kc` 삭제 후 데이터 스토어 `thelook-bigquery-federated` 삭제
+2. **Knowledge Catalog**: 용어 `NRR`, `COZY-EDIT` ➔ 카테고리 2개 ➔ 용어집 `thelook-business-glossary` ➔ 관점 유형 `semantic-sql-rule` 순서로 삭제
+3. **BigQuery**: 아래 SQL 실행
+
+```sql
+DROP SCHEMA IF EXISTS `thelook_ecommerce` CASCADE;
+```
